@@ -1,7 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.reactnativebase">
+  package="com.helloworld">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <queries>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https"/>
+      </intent>
+    </queries>
 
     <application
       android:name=".MainApplication"
@@ -9,26 +16,17 @@
       android:icon="@mipmap/ic_launcher"
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
-      android:theme="@style/AppTheme"
-      android:exported="true"
-      android:launchMode="singleTask">
+      android:theme="@style/BootTheme">
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
-        android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
         android:launchMode="singleTask"
-        android:windowSoftInputMode="adjustResize">
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
         <intent-filter>
-          <action android:name="android.intent.action.MAIN" />
-        </intent-filter>
-      </activity>
-      <activity
-        android:name="com.zoontek.rnbootsplash.RNBootSplashActivity"
-        android:theme="@style/BootTheme"
-        android:launchMode="singleTask">
-        <intent-filter>
-          <action android:name="android.intent.action.MAIN" />
-          <category android:name="android.intent.category.LAUNCHER" />
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
     </application>

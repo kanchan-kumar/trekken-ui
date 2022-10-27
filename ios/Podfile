@@ -1,83 +1,47 @@
-platform :ios, '11.0'
-require_relative '../node_modules/react-native/scripts/react_native_pods'
-require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+pod_folder = Pathname.new(__FILE__).dirname.realpath
 
-# Post Install processing for Flipper
-def flipper_post_install(installer)
-  file_name = Dir.glob("*.xcodeproj")[0]
-  app_project = Xcodeproj::Project.open(file_name)
-  app_project.native_targets.each do |target|
-    target.build_configurations.each do |config|
-      cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited) '
-      unless cflags.include? '-DFB_SONARKIT_ENABLED=1'
-        puts 'Adding -DFB_SONARKIT_ENABLED=1 in OTHER_CFLAGS...'
-        cflags << '-DFB_SONARKIT_ENABLED=1'
-      end
-      config.build_settings['OTHER_CFLAGS'] = cflags
+require File.join(File.dirname(`cd #{pod_folder} && node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`cd #{pod_folder} && node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+require File.join(File.dirname(`cd #{pod_folder} && node --print "require.resolve('@react-native-community/cli-platform-ios/package.json')"`), "native_modules")
+
+platform :ios, '12.4'
+install! 'cocoapods', :deterministic_uuids => false
+
+production = ENV["PRODUCTION"] == "1"
+
+target 'HelloWorld' do
+  use_expo_modules!
+  post_integrate do |installer|
+    begin
+      expo_patch_react_imports!(installer)
+    rescue => e
+      Pod::UI.warn e
     end
-    app_project.save
   end
-  installer.pods_project.save
-end
+  config = use_native_modules!
 
-def base_pods
+  # Flags change depending on the env values.
+  flags = get_default_flags()
 
-end
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :production => production,
+    # to disable hermes on iOS, change `true` to `flags[:hermes_enabled]` and then install pods
+    :hermes_enabled => true,
+    :fabric_enabled => flags[:fabric_enabled],
+    :flipper_configuration => FlipperConfiguration.enabled(["Debug"], { 'Flipper' => '0.157.0' }),
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
 
-target 'ReactNativeBase' do
-  # Pods for ReactNativeBase
-  base_pods
-
-  target 'ReactNativeBaseTests' do
+  target 'HelloWorldTests' do
     inherit! :complete
     # Pods for testing
   end
 
-  config = use_native_modules!
-  use_react_native!(:path => config["reactNativePath"])
-end
-
-target 'ReactNativeBase-Staging' do
-  # Pods for ReactNativeBase
-  base_pods
-  
-  config = use_native_modules!
-  use_react_native!(:path => config["reactNativePath"])
-end
-
-target 'ReactNativeBase-QA' do
-  # Pods for ReactNativeBase
-  base_pods
-  
-  config = use_native_modules!
-  use_react_native!(:path => config["reactNativePath"])
-end
-
-target 'ReactNativeBase-Develop' do
-  # Pods for ReactNativeBase
-  base_pods
-  
-  config = use_native_modules!
-  use_react_native!(:path => config["reactNativePath"])
-end
-
-target 'ReactNativeBase-tvOS' do
-  # Pods for ReactNativeBase-tvOS
-  
-  target 'ReactNativeBase-tvOSTests' do
-    inherit! :search_paths
-    # Pods for testing
+  post_install do |installer|
+    react_native_post_install(installer)
+    __apply_Xcode_12_5_M1_post_install_workaround(installer)
+    File.delete("./.xcode.env.local") if File.exist?("./.xcode.env.local")
   end
-  
-end
-
-# Flipper doesn't build with Xcode 12.5. See: https://github.com/facebook/flipper/issues/2215
-# Temporary solution:
-# `use_flipper!({ 'Flipper-Folly' => '2.5.3', 'Flipper' => '0.75.1', 'Flipper-RSocket' => '1.3.1' })`
-# instead of `use_flipper!`
-
-use_flipper!({'Flipper' => '0.75.1', 'Flipper-Folly' => '2.5.3', 'Flipper-RSocket' => '1.3.1'})
-
-post_install do |installer|
-  flipper_post_install(installer)
 end
